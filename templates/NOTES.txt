@@ -1,0 +1,8 @@
+{{- if .Values.proxy.ingress.enabled }}
+kubernetes-dashboard available at the following URL(s):
+{{- range $host := .Values.proxy.ingress.hosts }}
+  {{- range .paths }}
+  http{{ if $.Values.proxy.ingress.tls }}s{{ end }}://{{ $host.host }}{{ . }}
+  {{- end }}
+{{- end }}
+{{- end }}

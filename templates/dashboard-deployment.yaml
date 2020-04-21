@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kubernetes-dashboard.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{ include "kubernetes-dashboard.labels" . | indent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "kubernetes-dashboard.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "kubernetes-dashboard.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+    spec:
+      serviceAccountName: {{ template "kubernetes-dashboard.serviceAccountName" . }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.dashboard.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.dashboard.service.port }}
+              protocol: TCP
+          args:
+            - --namespace={{ .Release.Namespace }} 
+            {{- toYaml .Values.dashboard.args | nindent 12 }}
+          volumeMounts:
+            - name: kubernetes-dashboard-certs
+              mountPath: /certs
+            - mountPath: /tmp
+              name: tmp-volume
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.dashboard.service.port }}
+            initialDelaySeconds: 30
+            timeoutSeconds: 30
+{{- if .Values.proxy.enabled }}
+        - name: oauth-proxy
+          image: {{ .Values.proxy.image }}
+          ports:
+            - containerPort: {{ .Values.proxy.service.port }}
+              protocol: TCP
+          args: 
+            {{- toYaml .Values.proxy.args | nindent 12 }}
+{{- end }}
+      volumes:
+        - name: kubernetes-dashboard-certs
+          secret:
+            secretName: kubernetes-dashboard-certs
+        - name: tmp-volume
+          emptyDir: {}
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule

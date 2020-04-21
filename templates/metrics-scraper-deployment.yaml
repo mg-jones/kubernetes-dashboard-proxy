@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kubernetes-dashboard.fullname" . }}-metrics-scraper
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{ include "dashboard-metrics.labels" . | indent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "kubernetes-dashboard.name" . }}-metrics-scraper
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "kubernetes-dashboard.name" . }}-metrics-scraper
+      annotations:
+        seccomp.security.alpha.kubernetes.io/pod: 'runtime/default'
+    spec:
+      serviceAccountName: {{ template "kubernetes-dashboard.serviceAccountName" . }}
+      containers:
+        - name: {{ .Chart.Name }}-metrics-scraper
+          securityContext:
+            {{- toYaml .Values.dashboard.securityContext | nindent 12 }}
+          image: "{{ .Values.metricsScraper.image}}:{{ .Values.metricsScraper.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.dashboard.service.port }}
+              protocol: TCP
+          volumeMounts:
+            - name: tmp-volume
+              mountPath: /tmp
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.metricsScraper.service.port }}
+            initialDelaySeconds: 30
+            timeoutSeconds: 30
+      volumes:
+        - name: tmp-volume
+          emptyDir: {}
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule

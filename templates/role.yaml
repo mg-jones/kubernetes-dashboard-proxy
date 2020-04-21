@@ -1,0 +1,29 @@
+{{- $fullName := include "kubernetes-dashboard.fullname" . -}}
+{{- $name := include "kubernetes-dashboard.name" . -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+{{ include "kubernetes-dashboard.labels" . | indent 4 }}
+  name: {{ include "kubernetes-dashboard.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+rules:
+  # Allow Dashboard to get, update and delete Dashboard exclusive secrets.
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["{{ $name }}-key-holder", "{{ $name }}-certs", "{{ $name }}-csrf"]
+    verbs: ["get", "update", "delete"]
+    # Allow Dashboard to get and update 'kubernetes-dashboard-settings' config map.
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["{{ $name }}-settings"]
+    verbs: ["get", "update"]
+    # Allow Dashboard to get metrics.
+  - apiGroups: [""]
+    resources: ["services"]
+    resourceNames: ["dashboard-metrics-scraper"]
+    verbs: ["proxy"]
+  - apiGroups: [""]
+    resources: ["services/proxy"]
+    resourceNames: ["dashboard-metrics-scraper", "http:dashboard-metrics-scraper"]
+    verbs: ["get"]

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kubernetes-dashboard.name" . }}-settings
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{ include "kubernetes-dashboard.labels" . | indent 4 }}

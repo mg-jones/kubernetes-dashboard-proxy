@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kubernetes-dashboard.fullname" . }}-metrics-scraper
+  name: dashboard-metrics-scraper
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{ include "dashboard-metrics.labels" . | indent 4 }}
+spec:
+  type: {{ .Values.metricsScraper.service.type }}
+  ports:
+    - port: {{ .Values.metricsScraper.service.port }}
+      targetPort: {{ .Values.metricsScraper.service.port }}
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: {{ include "kubernetes-dashboard.name" . }}-metrics-scraper

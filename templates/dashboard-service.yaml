@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kubernetes-dashboard.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+{{ include "kubernetes-dashboard.labels" . | indent 4 }}
+spec:
+  type: {{ .Values.dashboard.service.type }}
+  ports:
+    - port: {{ .Values.dashboard.service.port }}
+      targetPort: {{ .Values.dashboard.service.port }}
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: {{ include "kubernetes-dashboard.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
